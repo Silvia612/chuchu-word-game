@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>单词打卡小助手</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <div id="app">
+        <!-- 启动页 -->
+        <div id="splash-screen" class="screen active">
+            <div class="splash-content">
+                <div class="logo">📚</div>
+                <h1>单词打卡小助手</h1>
+                <p>让学习变得有趣</p>
+                <button class="btn-primary" onclick="showScreen('home')">开始学习</button>
+            </div>
+        </div>
+
+        <!-- 首页 -->
+        <div id="home" class="screen">
+            <header class="header">
+                <div class="user-info">
+                    <span class="avatar">👤</span>
+                    <span class="name" id="studentName">楚楚</span>
+                </div>
+                <div class="streak-badge">
+                    <span class="fire">🔥</span>
+                    <span id="streakCount">0</span>天
+                </div>
+            </header>
+
+            <div class="today-card">
+                <div class="card-header">
+                    <h2>今日单词</h2>
+                    <span class="date" id="todayDate">4月26日</span>
+                </div>
+                <div class="word-count">
+                    <span class="count" id="todayWordCount">5</span>
+                    <span class="label">个单词</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress" id="todayProgress" style="width: 0%"></div>
+                </div>
+                <button class="btn-primary btn-large" onclick="startLearn()">
+                    开始学习
+                </button>
+            </div>
+
+            <div class="quick-actions">
+                <div class="action-card" onclick="showScreen('review')">
+                    <div class="icon">📖</div>
+                    <div class="title">复习单词</div>
+                    <div class="desc">查看所有单词</div>
+                </div>
+                <div class="action-card" onclick="showScreen('stats')">
+                    <div class="icon">📊</div>
+                    <div class="title">学习统计</div>
+                    <div class="desc">查看学习数据</div>
+                </div>
+            </div>
+
+            <div class="week-words">
+                <h3>本周单词</h3>
+                <div class="day-list" id="weekDays"></div>
+            </div>
+        </div>
+
+        <!-- 学习页面 -->
+        <div id="learn" class="screen">
+            <header class="header learn-header">
+                <button class="back-btn" onclick="showScreen('home')">←</button>
+                <div class="progress-info">
+                    <span id="currentWordIndex">1</span>/<span id="totalWords">5</span>
+                </div>
+                <div class="hearts" id="hearts">❤️❤️❤️</div>
+            </header>
+
+            <div class="learn-content">
+                <div class="word-card" id="wordCard">
+                    <div class="word" id="currentWord">reserve</div>
+                    <div class="phonetic" id="phonetic">/rɪˈzɜːv/</div>
+                    <div class="type" id="wordType">n./v.</div>
+                    <div class="meaning" id="currentMeaning">n. 保护区；v. 预留、预定</div>
+                    <button class="btn-speak" onclick="speakWord()">🔊 发音</button>
+                </div>
+
+                <div class="learn-actions">
+                    <button class="btn-secondary" onclick="showMeaning()">显示含义</button>
+                    <button class="btn-primary" onclick="nextWord()">记住了 →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 测试页面 -->
+        <div id="test" class="screen">
+            <header class="header test-header">
+                <button class="back-btn" onclick="exitTest()">←</button>
+                <div class="test-progress">
+                    <div class="test-progress-bar" id="testProgressBar"></div>
+                </div>
+                <div class="score" id="testScore">0分</div>
+            </header>
+
+            <div class="test-content">
+                <div class="question-type" id="questionType">选择题</div>
+                <div class="question" id="questionText">reserve 的中文意思是？</div>
+
+                <div class="options" id="optionsContainer">
+                    <!-- 动态生成选项 -->
+                </div>
+
+                <div class="input-answer" id="inputAnswer" style="display: none;">
+                    <input type="text" id="answerInput" placeholder="请输入答案">
+                    <button class="btn-primary" onclick="submitAnswer()">确定</button>
+                </div>
+            </div>
+
+            <div class="feedback" id="feedback" style="display: none;">
+                <div class="feedback-icon" id="feedbackIcon">✓</div>
+                <div class="feedback-text" id="feedbackText">正确！</div>
+                <button class="btn-primary" onclick="nextQuestion()">继续 →</button>
+            </div>
+        </div>
+
+        <!-- 结果页面 -->
+        <div id="result" class="screen">
+            <div class="result-content">
+                <div class="result-icon" id="resultIcon">🎉</div>
+                <h2 id="resultTitle">太棒了！</h2>
+                <div class="result-score">
+                    <span class="score-num" id="finalScore">100</span>
+                    <span class="score-label">分</span>
+                </div>
+                <div class="result-stats">
+                    <div class="stat-item">
+                        <span class="stat-value" id="correctCount">5</span>
+                        <span class="stat-label">正确</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="wrongCount">0</span>
+                        <span class="stat-label">错误</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="timeUsed">2:30</span>
+                        <span class="stat-label">用时</span>
+                    </div>
+                </div>
+                <div class="result-actions">
+                    <button class="btn-primary" onclick="generateReport()">生成打卡报告 📸</button>
+                    <button class="btn-secondary" onclick="showScreen('home')">返回首页</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 复习页面 -->
+        <div id="review" class="screen">
+            <header class="header">
+                <button class="back-btn" onclick="showScreen('home')">←</button>
+                <h2>所有单词</h2>
+            </header>
+            <div class="word-list" id="allWordsList"></div>
+        </div>
+
+        <!-- 统计页面 -->
+        <div id="stats" class="screen">
+            <header class="header">
+                <button class="back-btn" onclick="showScreen('home')">←</button>
+                <h2>学习统计</h2>
+            </header>
+            <div class="stats-content">
+                <div class="stats-card">
+                    <div class="stat-big">
+                        <span class="value" id="statTotalDays">0</span>
+                        <span class="label">累计学习天数</span>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <span class="value" id="statTotalWords">30</span>
+                        <span class="label">已学单词</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="value" id="statCorrectRate">0%</span>
+                        <span class="label">正确率</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="value" id="statStreak">0</span>
+                        <span class="label">连续天数</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 报告页面 -->
+        <div id="report" class="screen">
+            <div class="report-card" id="reportCard">
+                <div class="report-header">
+                    <div class="report-logo">📚 单词打卡</div>
+                    <div class="report-date" id="reportDate">2026年4月26日</div>
+                </div>
+                <div class="report-body">
+                    <div class="report-user">
+                        <span class="report-name">楚楚</span>
+                        <span class="report-teacher">小宝老师</span>
+                    </div>
+                    <div class="report-score">
+                        <span class="score-label">今日得分</span>
+                        <span class="score-value" id="reportScore">100</span>
+                    </div>
+                    <div class="report-words">
+                        <h4>今日单词</h4>
+                        <ul id="reportWords"></ul>
+                    </div>
+                    <div class="report-footer">
+                        <p>坚持就是胜利！💪</p>
+                    </div>
+                </div>
+            </div>
+            <div class="report-actions">
+                <button class="btn-primary" onclick="saveReport()">保存图片 📥</button>
+                <button class="btn-secondary" onclick="showScreen('home')">返回首页</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

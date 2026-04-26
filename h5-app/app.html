@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词打卡小助手 - 楚楚</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --primary: #6C63FF; --secondary: #FF6B9D; --bg: #F5F7FA; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); min-height: 100vh; }
+        .container { max-width: 400px; margin: 0 auto; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .user { display: flex; align-items: center; gap: 10px; }
+        .avatar { font-size: 32px; }
+        .name { font-size: 18px; font-weight: 600; }
+        .streak { background: linear-gradient(135deg, #FF6B6B, #FF8E53); color: white; padding: 6px 14px; border-radius: 20px; font-size: 14px; }
+        .card { background: white; border-radius: 20px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .card h2 { font-size: 20px; margin-bottom: 16px; }
+        .word-count { text-align: center; margin: 20px 0; }
+        .word-count .num { font-size: 48px; font-weight: 700; color: var(--primary); }
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 25px; font-size: 18px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), #8B85FF); color: white; box-shadow: 0 4px 15px rgba(108,99,255,0.3); }
+        .btn-primary:hover { transform: translateY(-2px); }
+        .btn-secondary { background: white; color: var(--primary); border: 2px solid var(--primary); margin-top: 10px; }
+        .word-card { text-align: center; padding: 30px; }
+        .word { font-size: 32px; font-weight: 700; color: var(--primary); margin-bottom: 8px; }
+        .phonetic { font-size: 16px; color: #999; margin-bottom: 8px; }
+        .meaning { font-size: 18px; margin-bottom: 20px; min-height: 50px; }
+        .btn-speak { background: linear-gradient(135deg, #FF6B9D, #FF8E53); color: white; border: none; padding: 10px 24px; border-radius: 20px; cursor: pointer; }
+        .actions { display: flex; gap: 10px; margin-top: 20px; }
+        .actions .btn { flex: 1; padding: 12px; font-size: 16px; }
+        .options { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        .option { background: white; border: 2px solid #eee; border-radius: 12px; padding: 16px; font-size: 16px; cursor: pointer; text-align: left; }
+        .option:hover { border-color: var(--primary); background: #F8F7FF; }
+        .option.correct { border-color: #4CAF50; background: #E8F5E9; }
+        .option.wrong { border-color: #F44336; background: #FFEBEE; }
+        .progress { height: 8px; background: #eee; border-radius: 4px; margin: 16px 0; overflow: hidden; }
+        .progress-bar { height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); transition: width 0.5s; }
+        .result { text-align: center; padding: 40px 0; }
+        .result-icon { font-size: 80px; margin-bottom: 20px; }
+        .result h2 { font-size: 28px; margin-bottom: 20px; }
+        .score { font-size: 72px; font-weight: 700; color: var(--primary); }
+        .stats { display: flex; justify-content: center; gap: 40px; margin: 30px 0; }
+        .stat { text-align: center; }
+        .stat-value { font-size: 32px; font-weight: 700; }
+        .stat-label { font-size: 14px; color: #999; }
+        .hidden { display: none; }
+        .back { background: none; border: none; font-size: 24px; cursor: pointer; padding: 5px; }
+        .test-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .test-progress { flex: 1; height: 8px; background: #eee; border-radius: 4px; overflow: hidden; }
+        .test-progress-bar { height: 100%; background: var(--primary); }
+        .test-score { font-size: 16px; font-weight: 600; color: var(--primary); }
+        .question { font-size: 22px; font-weight: 600; text-align: center; margin-bottom: 20px; }
+        .week-list { display: flex; flex-direction: column; gap: 10px; }
+        .day-item { background: white; border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); cursor: pointer; }
+        .day-item.today { background: linear-gradient(135deg, var(--primary), #8B85FF); color: white; }
+        .status { font-size: 12px; padding: 4px 10px; border-radius: 10px; background: rgba(255,255,255,0.2); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 首页 -->
+        <div id="home-screen">
+            <div class="header">
+                <div class="user">
+                    <span class="avatar">👤</span>
+                    <span class="name">楚楚</span>
+                </div>
+                <div class="streak">🔥 0天</div>
+            </div>
+
+            <div class="card">
+                <h2>📚 今日单词 <span style="float:right;font-size:14px;color:#999">4月26日</span></h2>
+                <div class="word-count">
+                    <span class="num">5</span> 个单词
+                </div>
+                <div class="progress"><div class="progress-bar" style="width:0%"></div></div>
+                <button class="btn btn-primary" onclick="startLearn()">开始学习</button>
+            </div>
+
+            <div class="card">
+                <h2>📅 本周单词</h2>
+                <div class="week-list">
+                    <div class="day-item" onclick="learnDay('2026-04-22')">
+                        <span>周三 (4/22)</span><span>5个</span><span class="status">待学</span>
+                    </div>
+                    <div class="day-item" onclick="learnDay('2026-04-23')">
+                        <span>周四 (4/23)</span><span>5个</span><span class="status">待学</span>
+                    </div>
+                    <div class="day-item" onclick="learnDay('2026-04-24')">
+                        <span>周五 (4/24)</span><span>5个</span><span class="status">待学</span>
+                    </div>
+                    <div class="day-item" onclick="learnDay('2026-04-25')">
+                        <span>周六 (4/25)</span><span>5个</span><span class="status">待学</span>
+                    </div>
+                    <div class="day-item today">
+                        <span>周日 (4/26)</span><span>5个</span><span class="status">今日</span>
+                    </div>
+                    <div class="day-item" onclick="learnDay('2026-04-27')">
+                        <span>周一 (4/27)</span><span>5个</span><span class="status">待学</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 学习页面 -->
+        <div id="learn-screen" class="hidden">
+            <div class="header">
+                <button class="back" onclick="goHome()">←</button>
+                <span id="learn-progress">1/5</span>
+                <span id="hearts">❤️❤️❤️</span>
+            </div>
+            <div class="card word-card">
+                <div class="word" id="word">reserve</div>
+                <div class="phonetic" id="phonetic">/rɪˈzɜːv/</div>
+                <div class="meaning" id="meaning">点击下方显示含义</div>
+                <button class="btn-speak" onclick="speak()">🔊 发音</button>
+            </div>
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="showMeaning()">显示含义</button>
+                <button class="btn btn-primary" onclick="nextWord()">记住了 →</button>
+            </div>
+        </div>
+
+        <!-- 测试页面 -->
+        <div id="test-screen" class="hidden">
+            <div class="test-header">
+                <button class="back" onclick="goHome()">←</button>
+                <div class="test-progress"><div class="test-progress-bar" id="test-progress-bar" style="width:0%"></div></div>
+                <span class="test-score" id="test-score">0分</span>
+            </div>
+            <div class="card">
+                <div class="question" id="question">reserve 的中文意思是？</div>
+                <div class="options" id="options"></div>
+            </div>
+        </div>
+
+        <!-- 结果页面 -->
+        <div id="result-screen" class="hidden">
+            <div class="card result">
+                <div class="result-icon">🎉</div>
+                <h2>太棒了！</h2>
+                <div class="score" id="final-score">100</div>
+                <div class="stats">
+                    <div class="stat"><span class="stat-value" id="correct-count">5</span><span class="stat-label">正确</span></div>
+                    <div class="stat"><span class="stat-value" id="wrong-count">0</span><span class="stat-label">错误</span></div>
+                    <div class="stat"><span class="stat-value" id="time-used">1:30</span><span class="stat-label">用时</span></div>
+                </div>
+                <button class="btn btn-primary" onclick="generateReport()">生成打卡报告 📸</button>
+                <button class="btn btn-secondary" onclick="goHome()">返回首页</button>
+            </div>
+        </div>
+
+        <!-- 报告页面 -->
+        <div id="report-screen" class="hidden">
+            <div class="card" id="report-card" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; text-align: center;">
+                <div style="font-size: 20px; font-weight: 600; margin-bottom: 8px;">📚 单词打卡</div>
+                <div style="font-size: 14px; opacity: 0.9;">2026年4月26日</div>
+            </div>
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #eee;">
+                    <span style="font-size: 18px; font-weight: 600;">楚楚</span>
+                    <span style="font-size: 14px; color: #999;">小宝老师</span>
+                </div>
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div style="font-size: 14px; color: #999;">今日得分</div>
+                    <div style="font-size: 64px; font-weight: 700; color: var(--primary);" id="report-score">100</div>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 12px;">今日单词</h4>
+                    <ul id="report-words" style="list-style: none;"></ul>
+                </div>
+                <div style="text-align: center; color: #999; font-size: 14px;">坚持就是胜利！💪</div>
+            </div>
+            <button class="btn btn-primary" onclick="alert('请截图保存报告！')">保存图片 📥</button>
+            <button class="btn btn-secondary" onclick="goHome()">返回首页</button>
+        </div>
+    </div>
+
+    <script>
+        // 单词数据
+        const wordsData = {
+            '2026-04-22': [
+                {word: 'It was lovely to hear from you', meaning: '很高兴收到你的来信', phonetic: ''},
+                {word: 'loads of', meaning: '许多', phonetic: '/ləʊdz əv/'},
+                {word: 'extracurricular activities', meaning: '课外活动', phonetic: ''},
+                {word: 'peer', meaning: '同龄人', phonetic: '/pɪər/'},
+                {word: 'bond with sb', meaning: '和某人建立亲密关系', phonetic: ''}
+            ],
+            '2026-04-23': [
+                {word: 'When it comes to', meaning: '当谈到...', phonetic: ''},
+                {word: 'recommend doing sth', meaning: '建议做某事', phonetic: ''},
+                {word: 'host activities', meaning: '主持活动', phonetic: ''},
+                {word: 'art workshop', meaning: '艺术工作坊', phonetic: ''},
+                {word: 'transform ...into ...', meaning: '把……转变成……', phonetic: ''}
+            ],
+            '2026-04-24': [
+                {word: 'acquaintance', meaning: '熟人', phonetic: '/əˈkweɪntəns/'},
+                {word: 'genuine friendship', meaning: '真正的友谊', phonetic: ''},
+                {word: 'settle in', meaning: '适应，安顿好', phonetic: ''},
+                {word: 'intimate', meaning: '亲密的', phonetic: '/ˈɪntɪmət/'},
+                {word: 'inner', meaning: '内部的、内心的', phonetic: '/ˈɪnər/'}
+            ],
+            '2026-04-25': [
+                {word: 'vivid', meaning: '生动的', phonetic: '/ˈvɪvɪd/'},
+                {word: 'plot', meaning: '情节', phonetic: '/plɒt/'},
+                {word: 'appropriate', meaning: '适当的', phonetic: '/əˈprəʊpriət/'},
+                {word: 'endangered', meaning: '濒危的', phonetic: ''},
+                {word: 'repair', meaning: '修理', phonetic: '/rɪˈpeər/'}
+            ],
+            '2026-04-26': [
+                {word: 'reserve', meaning: 'n. 保护区；v. 预留、预定', phonetic: '/rɪˈzɜːv/'},
+                {word: 'original', meaning: '原始的、原创的', phonetic: '/əˈrɪdʒənl/'},
+                {word: 'come up with', meaning: '提出、想出', phonetic: ''},
+                {word: 'glamorous', meaning: '富有魅力的', phonetic: '/ˈɡlæmərəs/'},
+                {word: 'appeal to', meaning: '吸引、上诉', phonetic: ''}
+            ],
+            '2026-04-27': [
+                {word: 'regard A as B', meaning: '把A当作B', phonetic: ''},
+                {word: 'be determined to do sth', meaning: '决定做某事', phonetic: ''},
+                {word: 'feedback', meaning: '反馈', phonetic: '/ˈfiːdbæk/'},
+                {word: 'constructive', meaning: '建设性的', phonetic: ''},
+                {word: 'critical', meaning: '关键的，批判性的', phonetic: '/ˈkrɪtɪkl/'}
+            ]
+        };
+
+        let currentWords = [];
+        let currentIndex = 0;
+        let testWords = [];
+        let testIndex = 0;
+        let score = 0;
+        let correct = 0;
+        let wrong = 0;
+        let startTime = null;
+        let showingMeaning = false;
+
+        function showScreen(id) {
+            document.querySelectorAll('.container > div').forEach(el => el.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function goHome() {
+            showScreen('home-screen');
+        }
+
+        function startLearn() {
+            learnDay('2026-04-26');
+        }
+
+        function learnDay(date) {
+            currentWords = wordsData[date] || [];
+            if (currentWords.length === 0) {
+                alert('该日期没有单词');
+                return;
+            }
+            currentIndex = 0;
+            showingMeaning = false;
+            showScreen('learn-screen');
+            renderWord();
+        }
+
+        function renderWord() {
+            const word = currentWords[currentIndex];
+            document.getElementById('learn-progress').textContent = `${currentIndex + 1}/${currentWords.length}`;
+            document.getElementById('word').textContent = word.word;
+            document.getElementById('phonetic').textContent = word.phonetic || '';
+            document.getElementById('meaning').textContent = showingMeaning ? word.meaning : '点击下方显示含义';
+        }
+
+        function showMeaning() {
+            showingMeaning = true;
+            renderWord();
+        }
+
+        function nextWord() {
+            if (currentIndex < currentWords.length - 1) {
+                currentIndex++;
+                showingMeaning = false;
+                renderWord();
+            } else {
+                startTest();
+            }
+        }
+
+        function speak() {
+            const word = currentWords[currentIndex];
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(word.word);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.8;
+                speechSynthesis.speak(utterance);
+            }
+        }
+
+        function startTest() {
+            testWords = [...currentWords];
+            testIndex = 0;
+            score = 0;
+            correct = 0;
+            wrong = 0;
+            startTime = Date.now();
+            showScreen('test-screen');
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const word = testWords[testIndex];
+            document.getElementById('test-progress-bar').style.width = `${(testIndex / testWords.length) * 100}%`;
+            document.getElementById('test-score').textContent = `${score}分`;
+            document.getElementById('question').textContent = `"${word.word}" 的中文意思是？`;
+
+            // 生成选项
+            const allWords = Object.values(wordsData).flat();
+            const wrongOptions = allWords.filter(w => w.word !== word.word).sort(() => Math.random() - 0.5).slice(0, 3).map(w => w.meaning);
+            const options = [word.meaning, ...wrongOptions].sort(() => Math.random() - 0.5);
+
+            const optionsEl = document.getElementById('options');
+            optionsEl.innerHTML = '';
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option';
+                btn.textContent = opt;
+                btn.onclick = () => selectOption(btn, opt, word.meaning);
+                optionsEl.appendChild(btn);
+            });
+        }
+
+        function selectOption(btn, selected, answer) {
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.onclick = null;
+                if (opt.textContent === answer) opt.classList.add('correct');
+            });
+
+            if (selected === answer) {
+                btn.classList.add('correct');
+                correct++;
+                score += 20;
+            } else {
+                btn.classList.add('wrong');
+                wrong++;
+            }
+
+            setTimeout(() => {
+                if (testIndex < testWords.length - 1) {
+                    testIndex++;
+                    renderQuestion();
+                } else {
+                    showResult();
+                }
+            }, 800);
+        }
+
+        function showResult() {
+            const timeUsed = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(timeUsed / 60);
+            const seconds = timeUsed % 60;
+
+            document.getElementById('final-score').textContent = score;
+            document.getElementById('correct-count').textContent = correct;
+            document.getElementById('wrong-count').textContent = wrong;
+            document.getElementById('time-used').textContent = `${minutes}:${String(seconds).padStart(2, '0')}`;
+
+            showScreen('result-screen');
+        }
+
+        function generateReport() {
+            document.getElementById('report-score').textContent = score;
+            const wordsList = document.getElementById('report-words');
+            wordsList.innerHTML = '';
+            currentWords.forEach(word => {
+                const li = document.createElement('li');
+                li.style.padding = '8px 0';
+                li.style.borderBottom = '1px solid #eee';
+                li.textContent = `${word.word} - ${word.meaning}`;
+                wordsList.appendChild(li);
+            });
+            showScreen('report-screen');
+        }
+    </script>
+</body>
+</html>

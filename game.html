@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>魔法单词大冒险</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            overflow: hidden;
+            color: white;
+        }
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        /* 开始界面 */
+        #start-screen {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #0a0a15 100%);
+        }
+        .game-title {
+            font-size: 48px;
+            font-weight: bold;
+            background: linear-gradient(45deg, #f39c12, #e74c3c, #9b59b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(243, 156, 18, 0.5);
+            margin-bottom: 20px;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 20px rgba(243, 156, 18, 0.5)); }
+            to { filter: drop-shadow(0 0 40px rgba(231, 76, 60, 0.8)); }
+        }
+        .subtitle {
+            font-size: 18px;
+            color: #888;
+            margin-bottom: 40px;
+        }
+        .start-btn {
+            padding: 20px 60px;
+            font-size: 24px;
+            background: linear-gradient(135deg, #f39c12, #e74c3c);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(243, 156, 18, 0.4);
+            transition: all 0.3s;
+        }
+        .start-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(243, 156, 18, 0.6);
+        }
+        
+        /* 游戏界面 */
+        #game-screen {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+        }
+        
+        /* 顶部状态栏 */
+        .status-bar {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+        }
+        .health-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .heart { font-size: 24px; transition: all 0.3s; }
+        .heart.lost { opacity: 0.3; transform: scale(0.8); }
+        .score-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: #f39c12;
+        }
+        .level-display {
+            font-size: 18px;
+            color: #9b59b6;
+        }
+        
+        /* 游戏场景 */
+        .game-scene {
+            position: absolute;
+            top: 80px; left: 0; right: 0; bottom: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* 怪物 */
+        .monster {
+            text-align: center;
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        .monster-sprite {
+            font-size: 120px;
+            filter: drop-shadow(0 10px 30px rgba(0,0,0,0.5));
+        }
+        .monster-name {
+            font-size: 24px;
+            margin-top: 10px;
+            color: #e74c3c;
+        }
+        .monster-hint {
+            font-size: 16px;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        /* 单词提示 */
+        .word-hint {
+            background: rgba(255,255,255,0.1);
+            padding: 20px 40px;
+            border-radius: 20px;
+            text-align: center;
+            margin-top: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .word-meaning {
+            font-size: 28px;
+            color: #f39c12;
+            margin-bottom: 10px;
+        }
+        .word-length {
+            font-size: 16px;
+            color: #888;
+        }
+        
+        /* 输入区域 */
+        .input-area {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            padding: 30px;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+        }
+        .letter-display {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .letter-box {
+            width: 50px;
+            height: 60px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: all 0.3s;
+        }
+        .letter-box.filled {
+            background: rgba(243, 156, 18, 0.3);
+            border-color: #f39c12;
+            animation: pop 0.3s ease;
+        }
+        .letter-box.correct {
+            background: rgba(46, 204, 113, 0.5);
+            border-color: #2ecc71;
+        }
+        .letter-box.wrong {
+            background: rgba(231, 76, 60, 0.5);
+            border-color: #e74c3c;
+            animation: shake 0.5s ease;
+        }
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        .hint-btn {
+            display: block;
+            margin: 0 auto 15px;
+            padding: 10px 30px;
+            background: rgba(155, 89, 182, 0.3);
+            border: 1px solid #9b59b6;
+            border-radius: 20px;
+            color: #9b59b6;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .hint-btn:hover {
+            background: rgba(155, 89, 182, 0.5);
+        }
+        .hint-text {
+            text-align: center;
+            font-size: 14px;
+            color: #9b59b6;
+            margin-bottom: 15px;
+            min-height: 20px;
+        }
+        .word-input {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 24px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 15px;
+            color: white;
+            text-align: center;
+            text-transform: lowercase;
+            outline: none;
+            transition: all 0.3s;
+        }
+        .word-input:focus {
+            border-color: #f39c12;
+            box-shadow: 0 0 20px rgba(243, 156, 18, 0.3);
+        }
+        .word-input::placeholder {
+            color: rgba(255,255,255,0.3);
+        }
+        
+        /* 结果弹窗 */
+        .result-popup {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .result-content {
+            text-align: center;
+            padding: 40px;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 30px;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+        .result-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+        .result-title {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+        .result-score {
+            font-size: 48px;
+            color: #f39c12;
+            margin-bottom: 30px;
+        }
+        .result-btn {
+            padding: 15px 40px;
+            font-size: 18px;
+            background: linear-gradient(135deg, #f39c12, #e74c3c);
+            border: none;
+            border-radius: 30px;
+            color: white;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        /* 攻击动画 */
+        .attack-effect {
+            position: absolute;
+            font-size: 60px;
+            animation: attack 0.5s ease-out forwards;
+            pointer-events: none;
+        }
+        @keyframes attack {
+            0% { transform: scale(0) rotate(0deg); opacity: 1; }
+            100% { transform: scale(2) rotate(360deg); opacity: 0; }
+        }
+        
+        /* 关卡完成 */
+        .level-complete {
+            display: none;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 50;
+        }
+        .level-complete h2 {
+            font-size: 48px;
+            color: #2ecc71;
+            margin-bottom: 20px;
+        }
+        .treasure {
+            font-size: 100px;
+            animation: bounce 1s ease infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-30px); }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <!-- 开始界面 -->
+        <div id="start-screen">
+            <div class="game-title">🏰 魔法单词大冒险</div>
+            <div class="subtitle">拼出单词，打败怪物，拯救王国！</div>
+            <button class="start-btn" onclick="startGame()">开始冒险</button>
+        </div>
+        
+        <!-- 游戏界面 -->
+        <div id="game-screen">
+            <div class="status-bar">
+                <div class="health-bar">
+                    <span class="heart" id="heart1">❤️</span>
+                    <span class="heart" id="heart2">❤️</span>
+                    <span class="heart" id="heart3">❤️</span>
+                </div>
+                <div class="level-display">关卡 <span id="level">1</span></div>
+                <div class="score-display">⭐ <span id="score">0</span></div>
+            </div>
+            
+            <div class="game-scene">
+                <div class="monster" id="monster">
+                    <div class="monster-sprite" id="monster-sprite">👹</div>
+                    <div class="monster-name" id="monster-name">单词怪兽</div>
+                    <div class="word-hint">
+                        <div class="word-meaning" id="word-meaning">保护区；预留、预定</div>
+                        <div class="word-length" id="word-length">7个字母</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="input-area">
+                <button class="hint-btn" onclick="showHint()">💡 提示</button>
+                <div class="hint-text" id="hint-text"></div>
+                <div class="letter-display" id="letter-display"></div>
+                <input type="text" class="word-input" id="word-input" placeholder="输入单词攻击怪兽！" autocomplete="off">
+            </div>
+        </div>
+        
+        <!-- 结果弹窗 -->
+        <div class="result-popup" id="result-popup">
+            <div class="result-content">
+                <div class="result-icon" id="result-icon">🎉</div>
+                <div class="result-title" id="result-title">游戏结束</div>
+                <div class="result-score">得分: <span id="final-score">0</span></div>
+                <button class="result-btn" onclick="restartGame()">再来一次</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 单词数据
+        const words = [
+            { word: 'reserve', meaning: '保护区；预留、预定', hint: 'r开头，e结尾' },
+            { word: 'original', meaning: '原始的、原创的', hint: 'o开头，l结尾' },
+            { word: 'glamorous', meaning: '富有魅力的', hint: 'g开头，s结尾' },
+            { word: 'feedback', meaning: '反馈', hint: 'f开头，k结尾' },
+            { word: 'critical', meaning: '关键的、批判性的', hint: 'c开头，l结尾' },
+            { word: 'vivid', meaning: '生动的', hint: 'v开头，d结尾' },
+            { word: 'intimate', meaning: '亲密的', hint: 'i开头，e结尾' },
+            { word: 'acquaintance', meaning: '熟人', hint: 'a开头，e结尾' },
+            { word: 'appropriate', meaning: '适当的', hint: 'a开头，e结尾' },
+            { word: 'endangered', meaning: '濒危的', hint: 'e开头，d结尾' }
+        ];
+        
+        // 怪物精灵
+        const monsters = ['👹', '👺', '👻', '💀', '🧟', '🐲', '🦹', '👿', '🤖', '👾'];
+        
+        // 游戏状态
+        let gameState = {
+            score: 0,
+            level: 1,
+            hearts: 3,
+            currentWord: null,
+            usedWords: [],
+            isPlaying: false
+        };
+        
+        // 开始游戏
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'block';
+            gameState = {
+                score: 0,
+                level: 1,
+                hearts: 3,
+                currentWord: null,
+                usedWords: [],
+                isPlaying: true
+            };
+            updateUI();
+            nextWord();
+            document.getElementById('word-input').focus();
+        }
+        
+        // 更新UI
+        function updateUI() {
+            document.getElementById('score').textContent = gameState.score;
+            document.getElementById('level').textContent = gameState.level;
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById('heart' + i).classList.toggle('lost', i > gameState.hearts);
+            }
+        }
+        
+        // 下一个单词
+        function nextWord() {
+            const available = words.filter(w => !gameState.usedWords.includes(w.word));
+            if (available.length === 0) {
+                gameState.usedWords = [];
+                nextWord();
+                return;
+            }
+            
+            const randomIndex = Math.floor(Math.random() * available.length);
+            gameState.currentWord = available[randomIndex];
+            gameState.usedWords.push(gameState.currentWord.word);
+            
+            // 更新显示
+            document.getElementById('monster-sprite').textContent = monsters[Math.floor(Math.random() * monsters.length)];
+            document.getElementById('word-meaning').textContent = gameState.currentWord.meaning;
+            document.getElementById('word-length').textContent = gameState.currentWord.word.length + '个字母';
+            document.getElementById('hint-text').textContent = '';
+            
+            // 创建字母框
+            const letterDisplay = document.getElementById('letter-display');
+            letterDisplay.innerHTML = '';
+            for (let i = 0; i < gameState.currentWord.word.length; i++) {
+                const box = document.createElement('div');
+                box.className = 'letter-box';
+                box.id = 'letter-' + i;
+                letterDisplay.appendChild(box);
+            }
+            
+            // 清空输入
+            document.getElementById('word-input').value = '';
+        }
+        
+        // 显示提示
+        function showHint() {
+            if (gameState.currentWord) {
+                document.getElementById('hint-text').textContent = gameState.currentWord.hint;
+                gameState.score = Math.max(0, gameState.score - 5);
+                updateUI();
+            }
+        }
+        
+        // 检查答案
+        function checkAnswer(input) {
+            const word = gameState.currentWord.word.toLowerCase();
+            const answer = input.toLowerCase().trim();
+            
+            // 更新字母框
+            for (let i = 0; i < word.length; i++) {
+                const box = document.getElementById('letter-' + i);
+                if (answer[i]) {
+                    box.textContent = answer[i];
+                    box.classList.add('filled');
+                    if (answer[i] === word[i]) {
+                        box.classList.add('correct');
+                    } else {
+                        box.classList.add('wrong');
+                    }
+                }
+            }
+            
+            if (answer === word) {
+                // 正确！
+                gameState.score += 20;
+                gameState.level++;
+                updateUI();
+                
+                // 攻击动画
+                showAttackEffect();
+                
+                // 播放成功音效（如果支持）
+                playSound('success');
+                
+                setTimeout(() => {
+                    if (gameState.level > 10) {
+                        showResult(true);
+                    } else {
+                        nextWord();
+                    }
+                }, 800);
+            } else if (answer.length === word.length) {
+                // 错误！
+                gameState.hearts--;
+                updateUI();
+                
+                // 播放失败音效
+                playSound('fail');
+                
+                // 震动效果
+                document.querySelector('.monster').style.animation = 'none';
+                setTimeout(() => {
+                    document.querySelector('.monster').style.animation = 'float 3s ease-in-out infinite';
+                }, 100);
+                
+                if (gameState.hearts <= 0) {
+                    setTimeout(() => showResult(false), 500);
+                } else {
+                    setTimeout(() => {
+                        // 重置字母框
+                        for (let i = 0; i < word.length; i++) {
+                            const box = document.getElementById('letter-' + i);
+                            box.textContent = '';
+                            box.classList.remove('filled', 'correct', 'wrong');
+                        }
+                        document.getElementById('word-input').value = '';
+                    }, 800);
+                }
+            }
+        }
+        
+        // 攻击特效
+        function showAttackEffect() {
+            const effect = document.createElement('div');
+            effect.className = 'attack-effect';
+            effect.textContent = '⚡';
+            effect.style.left = '50%';
+            effect.style.top = '40%';
+            document.getElementById('game-screen').appendChild(effect);
+            setTimeout(() => effect.remove(), 500);
+        }
+        
+        // 播放音效
+        function playSound(type) {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                if (type === 'success') {
+                    oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+                    oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+                    oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2); // G5
+                } else {
+                    oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+                    oscillator.frequency.setValueAtTime(150, audioContext.currentTime + 0.1);
+                }
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } catch (e) {}
+        }
+        
+        // 显示结果
+        function showResult(isWin) {
+            gameState.isPlaying = false;
+            document.getElementById('result-popup').style.display = 'flex';
+            document.getElementById('result-icon').textContent = isWin ? '🏆' : '💔';
+            document.getElementById('result-title').textContent = isWin ? '恭喜通关！' : '游戏结束';
+            document.getElementById('final-score').textContent = gameState.score;
+        }
+        
+        // 重新开始
+        function restartGame() {
+            document.getElementById('result-popup').style.display = 'none';
+            startGame();
+        }
+        
+        // 输入监听
+        document.getElementById('word-input').addEventListener('input', function(e) {
+            if (!gameState.isPlaying || !gameState.currentWord) return;
+            
+            const input = e.target.value;
+            const word = gameState.currentWord.word;
+            
+            // 实时更新字母框
+            for (let i = 0; i < word.length; i++) {
+                const box = document.getElementById('letter-' + i);
+                if (input[i]) {
+                    box.textContent = input[i];
+                    box.classList.add('filled');
+                } else {
+                    box.textContent = '';
+                    box.classList.remove('filled');
+                }
+            }
+            
+            // 输入完整时检查
+            if (input.length === word.length) {
+                checkAnswer(input);
+            }
+        });
+        
+        // 回车提交
+        document.getElementById('word-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && gameState.isPlaying && gameState.currentWord) {
+                checkAnswer(e.target.value);
+            }
+        });
+    </script>
+</body>
+</html>
